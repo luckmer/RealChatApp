@@ -1,55 +1,38 @@
-
-const port = process.env.PORT || 3000;
-const express = require("express");
-const socket = require("socket.io");
-const  path = require('path');
-const http = require("http");
-const app = express();
-const server = http.createServer(app);
-const io = socket(server);
-
-app.use(express.static(path.join(__dirname, './public/components')));
-app.use(express.static(path.join(__dirname, './public/views')));
-app.use(express.static(path.join(__dirname, './public')));
-server.listen(port,console.log("connected"))
-
-app.get('/', (req, res) =>{
-    res.sendFile(__dirname + '/public/views/index.html')
+var app = require('express')();
+let port = process.env.PORT || 3000;
+var http = require('http').Server(app);
+const cors = require('cors');
+const io = require("socket.io")(http, {
+	cors: { origin: "http://localhost:3001"}
 });
 
-app.get('/:room', (req, res) =>{
-    res.sendFile(__dirname + '/public/views/room.html')
+http.listen(port);
+app.use(cors());
+app.get("/", (req, res) => {
+	res.send({ response: "Server is up and running." }).status(200);
 });
 
 let users = []
 
 io.on('connection', (socket) => {
-	socket.on("create new data", function (a, b){
-		let destination = `http://localhost:3000/room?a=${a}&b=${b}`;
-		socket.emit("redirect", destination)
-	});
-
 	socket.on("joined", function ({name,room}){
 		const user = userJoin(socket.id, name, room);
 		socket.join(user.room);
-		socket.on("chat", (msg) => io.to(user.room).emit('chat', user.name + " " + msg));
+		socket.on("chat", (msg) =>io.to(user.room).emit('chat',{ user: user.name, msg: msg }));
 	});
 
 	socket.on("new user", ({ name, room }) =>{
 		const user = userJoin(socket.id, name, room);
 		socket.join(user.room);
-		socket.broadcast
-			.to(user.room)
-			.emit('user-connected', user.name + " has joined");
+		socket.broadcast.to(user.room).emit('user-connected', user.name  );
 	});
 
-	socket.on('disconnect', function (){
+	socket.on('disconnect', () =>{
 		const user = userLeave(socket.id);
-		if (user) socket.broadcast
-			.to(user.room)
-			.emit('user-disconnected', user.name + " has disconnected ");
+		if (user) {
+			socket.broadcast.to(user.room).emit('user-disconnected',  user.name )
+		};
     });
-
 });
 
 const userJoin = (id, name, room) => {
