@@ -1,6 +1,6 @@
 let app = require('express')();
 let port = process.env.PORT || 3000;
-var http = require('http').Server(app);
+let http = require('http').Server(app);
 const cors = require('cors');
 const io = require("socket.io")(http, {
 	cors: { origin: "http://localhost:3001"}
