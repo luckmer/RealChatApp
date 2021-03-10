@@ -1,4 +1,4 @@
-var app = require('express')();
+let app = require('express')();
 let port = process.env.PORT || 3000;
 var http = require('http').Server(app);
 const cors = require('cors');
